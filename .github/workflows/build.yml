@@ -22,6 +22,12 @@ jobs:
       - name: Pasang KernelSU Next legacy
         run: curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s legacy
 
+      - name: Tambal bug ksu_init_rc_hook
+        run: |
+          F=drivers/kernelsu/runtime/ksud_integration.c
+          grep -q "static bool ksu_init_rc_hook" $F || sed -i '/^void stop_init_rc_hook()/a static bool ksu_init_rc_hook = true;' $F
+          grep -n "ksu_init_rc_hook" $F
+
       - name: Aktifkan config KSU
         run: printf 'CONFIG_KSU=y\nCONFIG_KPROBES=y\nCONFIG_HAVE_KPROBES=y\nCONFIG_KPROBE_EVENTS=y\n' >> arch/arm64/configs/${{ inputs.device }}_defconfig
 
@@ -29,7 +35,10 @@ jobs:
         run: git clone --depth=1 https://github.com/kdrag0n/proton-clang clang-13/aaa
 
       - name: Build
-        run: bash ./${{ inputs.device }}.sh
+        run: |
+          bash ./${{ inputs.device }}.sh > build.log 2>&1 || true
+          echo "=== RINGKASAN ERROR ==="
+          grep -n -E "error:|\*\*\* \[|undefined reference" build.log | head -40 || true
 
       - name: Cek hasil build
         run: test -f AnyKernel3-master/Image.gz-dtb

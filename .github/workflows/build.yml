@@ -11,31 +11,20 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
 
       - name: Install dependensi
         run: |
           sudo apt-get update
-          sudo apt-get install -y bc bison flex libssl-dev libelf-dev zip device-tree-compiler curl git
+          sudo apt-get install -y bc bison flex libssl-dev libelf-dev zip device-tree-compiler curl git python2
           sudo apt-get install -y libtinfo5 || true
-          sudo apt-get install -y python2
           sudo ln -sf /usr/bin/python2 /usr/bin/python
-          python --version
 
       - name: Pasang KernelSU Next
-        run: |
-          curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -
+        run: curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -
 
       - name: Aktifkan config KSU
         run: |
-          DEF=arch/arm64/configs/${{ inputs.device }}_defconfig
-          cat >> $DEF <<EOF
-          CONFIG_KSU=y
-          CONFIG_KPROBES=y
-          CONFIG_HAVE_KPROBES=y
-          CONFIG_KPROBE_EVENTS=y
-          EOF
+          printf 'CONFIG_KSU=y\nCONFIG_KPROBES=y\nCONFIG_HAVE_KPROBES=y\nCONFIG_KPROBE_EVENTS=y\n' >> arch/arm64/configs/${{ inputs.device }}_defconfig
 
       - name: Download Proton Clang
         run: |
@@ -43,5 +32,12 @@ jobs:
           git clone --depth=1 https://github.com/kdrag0n/proton-clang clang-13/aaa
 
       - name: Build
-        run: |
-          chmod +x ${{ inputs.device }}.sh
+        run: bash ./${{ inputs.device }}.sh
+
+      - name: Cek hasil build
+        run: test -f AnyKernel3-master/Image.gz-dtb
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kernel-${{ inputs.device }}-ksunext
+          path: AnyKernel3-master/*.zip

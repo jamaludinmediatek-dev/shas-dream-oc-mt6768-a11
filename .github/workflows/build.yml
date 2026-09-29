@@ -4,7 +4,7 @@ on:
     inputs:
       device:
         description: "lancelot atau merlin"
-        default: "lancelot"
+        default: "merlin"
 
 jobs:
   build:
@@ -19,8 +19,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y bc bison flex libssl-dev libelf-dev zip device-tree-compiler curl git
           sudo apt-get install -y libtinfo5 || true
-          sudo apt-get install -y python-is-python3
-          sudo ln -sf /usr/bin/python3 /usr/local/bin/python2 || true
+          sudo apt-get install -y python2
+          sudo ln -sf /usr/bin/python2 /usr/bin/python
+          python --version
 
       - name: Pasang KernelSU Next
         run: |
@@ -44,9 +45,3 @@ jobs:
       - name: Build
         run: |
           chmod +x ${{ inputs.device }}.sh
-          bash ./${{ inputs.device }}.sh
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: kernel-${{ inputs.device }}-ksunext
-          path: AnyKernel3-master/*.zip

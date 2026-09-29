@@ -20,8 +20,7 @@ jobs:
           sudo ln -sf /usr/bin/python2 /usr/bin/python
 
       - name: Pasang KernelSU Next
-        run: curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -
-
+        run: run: curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s legacy
       - name: Aktifkan config KSU
         run: |
           printf 'CONFIG_KSU=y\nCONFIG_KPROBES=y\nCONFIG_HAVE_KPROBES=y\nCONFIG_KPROBE_EVENTS=y\n' >> arch/arm64/configs/${{ inputs.device }}_defconfig

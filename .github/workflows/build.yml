@@ -19,24 +19,13 @@ jobs:
           sudo apt-get install -y libtinfo5 || true
           sudo ln -sf /usr/bin/python2 /usr/bin/python
 
-      - name: Pasang KernelSU Next
-        run: run: curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s legacy
+      - name: Pasang KernelSU Next legacy
+        run: curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s legacy
+
       - name: Aktifkan config KSU
         run: |
           printf 'CONFIG_KSU=y\nCONFIG_KPROBES=y\nCONFIG_HAVE_KPROBES=y\nCONFIG_KPROBE_EVENTS=y\n' >> arch/arm64/configs/${{ inputs.device }}_defconfig
 
       - name: Download Proton Clang
         run: |
-          mkdir -p clang-13
-          git clone --depth=1 https://github.com/kdrag0n/proton-clang clang-13/aaa
-
-      - name: Build
-        run: bash ./${{ inputs.device }}.sh
-
-      - name: Cek hasil build
-        run: test -f AnyKernel3-master/Image.gz-dtb
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: kernel-${{ inputs.device }}-ksunext
-          path: AnyKernel3-master/*.zip
+          mkdir

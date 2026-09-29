@@ -1,0 +1,50 @@
+name: Build Kernel KSU Next
+on:
+  workflow_dispatch:
+    inputs:
+      device:
+        description: "lancelot atau merlin"
+        default: "lancelot"
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install dependensi
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison flex libssl-dev libelf-dev zip device-tree-compiler curl git
+          sudo apt-get install -y libtinfo5 || true
+
+      - name: Pasang KernelSU Next
+        run: |
+          curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -
+
+      - name: Aktifkan config KSU
+        run: |
+          DEF=arch/arm64/configs/${{ inputs.device }}_defconfig
+          cat >> $DEF <<EOF
+          CONFIG_KSU=y
+          CONFIG_KPROBES=y
+          CONFIG_HAVE_KPROBES=y
+          CONFIG_KPROBE_EVENTS=y
+          EOF
+
+      - name: Download Proton Clang
+        run: |
+          mkdir -p clang-13
+          git clone --depth=1 https://github.com/kdrag0n/proton-clang clang-13/aaa
+
+      - name: Build
+        run: |
+          chmod +x ${{ inputs.device }}.sh
+          bash ./${{ inputs.device }}.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kernel-${{ inputs.device }}-ksunext
+          path: AnyKernel3-master/*.zip

@@ -18,11 +18,10 @@ jobs:
       - name: Pasang KernelSU Next legacy
         run: curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s legacy
 
-      - name: Pasang hook manual & No-Mount (MetaModule) di kernel
+      - name: Pasang hook manual di kernel
         run: |
           cat > patch_ksu.py <<'EOF'
           import sys
-          import os
 
           def fail(m):
               print("GAGAL:", m)
@@ -92,16 +91,6 @@ jobs:
               wr(p, s)
               print("OK", p)
 
-          # ---- fs/namei.c (Dukungan Path / MetaModule No-Mount) ----
-          p = "fs/namei.c"
-          if os.path.exists(p):
-              s = rd(p)
-              if "ksu_handle_stat" not in s:
-                  decl = "#ifdef CONFIG_KSU\nextern int ksu_handle_stat(int *dfd, const char __user **filename_user, int *flags);\n#endif\n\n"
-                  s = decl + s
-                  wr(p, s)
-                  print("OK", p)
-
           # ---- kernel/reboot.c ----
           p = "kernel/reboot.c"
           s = rd(p)
@@ -118,28 +107,14 @@ jobs:
           echo "=== HOOK TERPASANG ==="
           grep -rn "ksu_handle" fs kernel --include=*.c | grep -v "drivers/kernelsu" | head -20
 
-      - name: Cari defconfig dan aktifkan manual hook & metamodule no-mount
+      - name: Cari defconfig dan aktifkan manual hook
         run: |
           DEF=$(ls arch/arm64/configs | grep -i merlin | head -1)
           [ -z "$DEF" ] && DEF=$(ls arch/arm64/configs | grep -i mt6768 | head -1)
           echo "Pakai defconfig: $DEF"
           test -n "$DEF"
           echo "DEF=$DEF" >> $GITHUB_ENV
-          
-          # Konfigurasi KSU Next + Manual Hook + MetaModule (SUSFS/No-Mount)
-          cat << 'EOF' >> arch/arm64/configs/$DEF
-          CONFIG_KSU=y
-          CONFIG_KSU_MANUAL_HOOK=y
-          # CONFIG_KSU_SYSCALL_TABLE_HOOK is not set
-          # CONFIG_KSU_KPROBES_HOOK is not set
-
-          # Konfigurasi No-Mount / MetaModule Support
-          CONFIG_KSU_SUSFS=y
-          CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y
-          CONFIG_KSU_SUSFS_SUS_PATH=y
-          CONFIG_KSU_SUSFS_SUS_MOUNT=y
-          CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSUS=y
-          EOF
+          printf 'CONFIG_KSU=y\nCONFIG_KSU_MANUAL_HOOK=y\n# CONFIG_KSU_SYSCALL_TABLE_HOOK is not set\n# CONFIG_KSU_KPROBES_HOOK is not set\n' >> arch/arm64/configs/$DEF
 
       - name: Download Proton Clang
         run: git clone --depth=1 https://github.com/kdrag0n/proton-clang clang-13/aaa
@@ -154,7 +129,7 @@ jobs:
           echo "=== MODE HOOK ==="
           grep -n "Hook mode" build.log | head -3 || true
           echo "=== CONFIG HASIL ==="
-          grep -n -E "CONFIG_KSU|CONFIG_KPROBES|CONFIG_KSU_SUSFS" out/.config || true
+          grep -n -E "CONFIG_KSU|CONFIG_KPROBES" out/.config || true
           echo "=== PESAN ERROR ==="
           grep -n -E "error:|\*\*\*|Stop\." build.log | grep -v -E "ERR_get_error|extract-cert" | head -40 || true
           echo "=== 40 BARIS TERAKHIR ==="
@@ -173,8 +148,7 @@ jobs:
           cp out/arch/arm64/boot/Image.gz-dtb AK3/
           cd AK3 && zip -r9 ../kernel-merlin-ksunext-manual.zip . -x ".git*"
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: kernel-merlin-ksunext-manual
           path: |
